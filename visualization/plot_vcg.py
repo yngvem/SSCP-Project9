@@ -37,7 +37,7 @@ def plot_3d_vcg(vcg, figure=None, axes=None, set_lims=True, color='b'):
     ValueError
         If axes object is passed but no figure
     """
-    if ax is not None and figure is None:
+    if axes is not None and figure is None:
         raise ValueError("Can't use axes object without its figure.")
 
     # Create figure and axes
@@ -57,7 +57,7 @@ def plot_3d_vcg(vcg, figure=None, axes=None, set_lims=True, color='b'):
 
 
 def plot_vcg_axes(vcg, figure=None, axes=None, set_lims=True, 
-                  color=('b', 'b', 'b')):
+                  color=('b', 'b', 'b'), titles=None):
     """Plots the x, y and z position of the heart vector in different subplots.
 
     Parameters:
@@ -76,6 +76,9 @@ def plot_vcg_axes(vcg, figure=None, axes=None, set_lims=True,
         Wether or not to automatically set the limit of the plots
     color : Array like
         List of the different colors used for the plots.
+    titles : Array like
+        List of the titles for the three different plots. If None this is 
+        set to x, y and z position of heart vector.
 
     Returns:
     --------
@@ -91,20 +94,31 @@ def plot_vcg_axes(vcg, figure=None, axes=None, set_lims=True,
     ValueError
         If axes object is passed but no figure
     """
-    if ax is not None and figure is None:
+    if axes is not None and figure is None:
         raise ValueError("Can't use axes object without its figure.")
 
+    # Set titles:
+    titles = (
+        'X-position\nof VCG', 
+        'Y-position\nof VCG', 
+        'Z-position\nof VCG'
+        ) if titles is None else titles
+
     # Create figure and axes
-    fig = plt.figure() if figure is not None else figure
-    ax = [fig.add_subplot(1, 3, i) for i in range(3)] if axes is None else axes
+    fig = plt.figure() if figure is None else figure
+    ax = [fig.add_subplot(1, 3, i) for i in range(1, 4)] if axes is None else axes
 
     # Set limits
     if set_lims:
-        ax[0].set_xlim(np.min(vcg[:, 0]),np.max(vcg[:, 0]))
+        ax[0].set_ylim(np.min(vcg[:, 0]),np.max(vcg[:, 0]))
         ax[1].set_ylim(np.min(vcg[:, 1]),np.max(vcg[:, 1]))
-        ax[2].set_zlim(np.min(vcg[:, 2]),np.max(vcg[:, 2]))
+        ax[2].set_ylim(np.min(vcg[:, 2]),np.max(vcg[:, 2]))
+
+    # Set titles
+    for i in range(3):
+        ax[i].set_title(titles[i])
 
     # Plot VCG axes
-    plots = [ax[i].plot(vcg[:, i], color=color[i]) for i in range(n)]
+    plots = [ax[i].plot(vcg[:, i], color=color[i]) for i in range(3)]
 
     return fig, ax, plots

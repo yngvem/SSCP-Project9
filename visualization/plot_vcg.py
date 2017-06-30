@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+
 def plot_3d_vcg(vcg, figure=None, axes=None, set_lims=True, color='b'):
     """Creates a 3D curve plot of a VCG signal.
 

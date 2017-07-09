@@ -38,10 +38,16 @@ def cart_to_cylindrical(vcg):
 	return vcg_cyl
 
 
-def center(vcg):
-	"""Center the curve so that it's average is 0. 
-
-	Warning: This function changes its arguments, nothing is retuned. 
+def normalise_patient(patient):
+	"""Normalises the VCG by dividing by the maximum length of any point in the loop. 
 	"""
-	vcg -= np.mean(vcg, axis=0)
+	patient2 = patient.copy()
+	vcg_real = patient2['vcg_real']
+	vcg_real_len = np.sqrt(vcg_real['px']**2 + vcg_real['py']**2 + vcg_real['pz']**2).max()
+	patient2['vcg_real'] /= vcg_real_len
 
+	vcg_model = patient2['vcg_model']
+	vcg_model_len = [np.sqrt(s['px']**2 + s['py']**2 + s['pz']**2).max() for s in vcg_model]
+	for i in range(len(vcg_model)):
+		patient2['vcg_model'][i] /= vcg_model_len[i]
+	return patient2

@@ -142,7 +142,7 @@ def plot_vcg_axes(vcg, figure=None, axes=None, plots=None,
     # Plot VCG axes
     if plots is None:
         if color is not None:
-            plots = [ax[i].plot(trans(vcg[:, i]), color=color[i])[0] for i, trans in enumerate(transforms)]
+            plots = [ax[i].plot(trans(vcg[:, i]), color=color)[0] for i, trans in enumerate(transforms)]
         else:
             plots = [ax[i].plot(trans(vcg[:, i]))[0] for i, trans in enumerate(transforms)]
     else:

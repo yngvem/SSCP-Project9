@@ -1,6 +1,98 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.colors
+import matplotlib.cm
+import seaborn as sns
+
+
+def create_cmap(dataset=None, cmap='viridis'):
+    if type(cmap) == str:
+        cmap = matplotlib.cm.get_cmap('viridis')
+    colour_range = matplotlib.colors.Normalize(
+        vmin = dataset.min(),
+        vmax = dataset.max()
+    )
+    return matplotlib.cm.ScalarMappable(norm=colour_range, cmap=cmap)
+
+
+def multivariate_scatter(data_frame, no_components=4, colour_by=None, cmap=None,
+                         real_point=None, figure=None):
+    figure = figure if figure is not None else plt.figure()
+    axes = []
+
+
+    if colour_by is None:
+        colour='b'
+    elif colour_by in data_frame.columns:
+        colour_by = data_frame[colour_by].values
+        cmap = create_cmap(colour_by) if colour_by is not None and cmap is None else cmap
+        colour = cmap.to_rgba(colour_by)
+    else:
+        cmap = create_cmap(colour_by) if colour_by is not None and cmap is None else cmap
+        colour = cmap.to_rgba(colour_by)
+        
+
+    columns = data_frame.columns[:no_components]
+
+    for i in range(no_components):
+        for j in range(no_components):
+            axes.append(
+                figure.add_subplot(
+                    no_components,
+                    no_components,
+                    i*no_components + j + 1
+                )
+            )
+            axes[-1].set_xticks([])
+            axes[-1].set_yticks([])
+
+            if i == j:
+                sns.kdeplot(data_frame[columns[i]], legend=False)
+                ymin, ymax = axes[-1].get_ylim()
+                if real_point is not None:
+                    axes[-1].plot(
+                        [real_point[i], real_point[i]],
+                        [ymin, ymax], 
+                        'r'
+                    )
+            else:
+                axes[-1].scatter(
+                    data_frame[columns[j]], 
+                    data_frame[columns[i]],
+                    color=colour,
+                    s=5,
+                    alpha=0.8
+                )
+                if real_point is not None:
+                    axes[-1].scatter(
+                        real_point[j], 
+                        real_point[i], 
+                        color='r',
+                        marker='*',
+                        s=50
+                    )
+
+    for i in range(no_components):
+        axes[i*no_components].set_ylabel(columns[i])
+        axes[i + no_components*(no_components-1)].set_xlabel(columns[i])
+
+
+def univariate_scatter(data_frame, dyssynchrony, no_components=4,
+                       real_point=None, real_dys=None, figure=None):
+    figure = figure if figure is not None else plt.figure()
+    ax = []
+    columns = data_frame.columns[:no_components]
+
+    for i in range(no_components):
+        ax.append(figure.add_subplot(1, no_components, i+1))
+        ax[-1].scatter(data_frame[columns[i]], dyssynchrony, s=5, alpha=0.8),
+        ax[-1].set_xlabel(columns[i])
+
+        if real_point is not None:
+            ax[-1].scatter(real_point[i], real_dys, color='r', marker='*', s=50)
+    
+    ax[0].set_ylabel('Dyssynchrony')
 
 
 def plot_3d_vcg(vcg, figure=None, axes=None, wire=None, set_lims=True, color=None):

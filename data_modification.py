@@ -93,3 +93,34 @@ def center_patient(patient):
         patient['vcg_model'][i] -= vcg_model.mean()
 
     return patient
+
+
+def create_data_matrix(patient, transforms=None):
+    """Returns a datamatrix for the patients where each column is a simulation.
+
+    Arguments
+    ---------
+    patient : pandas.DataFrame
+        The dataframe containing all information about the patient
+    transforms : Array like
+        List containing three transformations to be applied to the different
+        axis of the VCG signal.
+    
+    Returns
+    -------
+    data_matrix : np.ndarray
+        A matrix where each column is a VCG signal for each simulation (the
+        three dimensions are just concatenated to one vector).
+    """
+    data_matrix = np.zeros((len(patient['vcg_model']), np.prod(patient['vcg_model'][0].shape)))
+    for i, simulation in enumerate(patient['vcg_model']):
+        sim = simulation.values.copy()
+
+        if transforms is not None:
+            for j in range(3):
+                if transforms[j] is not None:
+                    sim[j, :] = transforms[j](sim[j, :])
+
+        data_matrix[i] = sim.reshape(np.prod(sim.shape))
+
+    return data_matrix

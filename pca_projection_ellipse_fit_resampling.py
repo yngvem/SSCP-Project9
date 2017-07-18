@@ -7,25 +7,29 @@ from mpl_toolkits.mplot3d.axes3d import Axes3D
 
 from visualization.plot_vcg import plot_3d_vcg, plot_vcg_axes
 from data_modification import cart_to_cylindrical, center
+from fitellipse import fitellipse
 
 from sklearn.decomposition import PCA
 
 from numpy.linalg import eig, inv
+from numpy import mat
 
 from scipy import signal
 from scipy import interpolate
+from scipy import optimize
 
 # resample vcg
 # resample according to velocity? by interpolating or by actual probability resampling as particle filter?
 # like diff geometry parameterization
-def resample_by_velocity(patient_vcg, plotting=False):
+def resample_by_velocity(patient_vcg, length=None ,plotting=False):
     
     vcg = patient_vcg.as_matrix()
+    print(vcg)
     velocitat = np.diff(vcg, axis=0)
     norma = np.linalg.norm(velocitat, axis=1)
     param = np.cumsum(np.append(0, norma))
     
-    length =  len(param)
+    if length==None: length = len(param)
     x = interpolate.interp1d(param, vcg[:,0])
     y = interpolate.interp1d(param, vcg[:,1])
     z = interpolate.interp1d(param, vcg[:,2])
@@ -38,6 +42,25 @@ def resample_by_velocity(patient_vcg, plotting=False):
         plt.show()
 
     return x(s), y(s), z(s)
+
+def resample_by_velocity_2D(vcg_x, vcg_y, length=None ,plotting=False):
+    
+    vcg = np.column_stack((vcg_x, vcg_y))
+    velocitat = np.diff(vcg, axis=0)
+    norma = np.linalg.norm(velocitat, axis=1)
+    param = np.cumsum(np.append(0, norma))
+    
+    if length==None: length = len(param)
+    x = interpolate.interp1d(param, vcg[:,0])
+    y = interpolate.interp1d(param, vcg[:,1])
+    s = np.linspace(0, param.max(), length)
+    
+    if plotting:
+        plt.plot(vcg[:,0], vcg[:,1], color ='r')
+        plt.scatter(x(s), y(s),  color ='b')
+        plt.show()
+
+    return x(s), y(s)
 
 def fitEllipse(x,y):
     #http://nicky.vanforeest.com/misc/fitEllipse/fitEllipse.html#the-approach
@@ -102,13 +125,14 @@ def project_PCA(patient, plotting=False):
     
     return vcg_projected
 
-def ellipse_fit_projection(patient, plotting=False):
+def ellipse_fit_projection(patient, resample_proj=False, plotting=False):
     vcg_projected = project_PCA(patient)
+    if resample_proj: vcg_projected[:,0], vcg_projected[:,1] = resample_by_velocity_2D(vcg_projected[:,0], vcg_projected[:,1], plotting=True)
     a = fitEllipse(vcg_projected[:,0], vcg_projected[:,1])
-    center = ellipse_center(a)
-    phi = ellipse_angle_of_rotation2(a)
-    axes = ellipse_axis_length(a)
     if plotting:
+        center = ellipse_center(a)
+        phi = ellipse_angle_of_rotation2(a)
+        axes = ellipse_axis_length(a)
         print("center = ",  center)
         print("angle of rotation = ",  phi)
         print("axes = ", axes)
@@ -203,16 +227,32 @@ if __name__ == "__main__":
     
     
     # vcg polar plots
-    #vcg = patient['vcg_real'].as_matrix()
-    #center(vcg)
-    #vcg_polar = cart_to_cylindrical(vcg)
-    #fig, ax, plots = plot_vcg_axes(vcg_polar)
-    #fig, ax, wire = plot_3d_vcg(vcg)
-    #plt.show(plots)
-    #plt.show(wire)
+    if False:
+        #patient['vcg_real']['px'], patient['vcg_real']['py'], patient['vcg_real']['pz'] = resample_by_velocity(patient['vcg_real'], plotting=True)
+        vcg = patient['vcg_real'].as_matrix()
+        center(vcg)
+        vcg_polar = cart_to_cylindrical(vcg)
+        fig, ax, plots = plot_vcg_axes(vcg_polar)
+        fig, ax, wire = plot_3d_vcg(vcg)
+        plt.show(plots)
+        plt.show(wire)
 
-    # PCA projection
+    # PCA projection vcg
     #project_PCA(patient, plotting=True)
+    
+    # PCA projected vcg polar plots
+    # By resampling the time dependency is lost in favor of only the curve geometry
+    # the plots look all more alike, not sure that is good, in case you want to calculate the area of the r(t) graph you may want it to have its time dependency
+    if False:
+        patient['vcg_real']['px'], patient['vcg_real']['py'], patient['vcg_real']['pz'] = resample_by_velocity(patient['vcg_real'], plotting=True)
+        vcg = project_PCA(patient)
+        #vcg = patient['vcg_real'].as_matrix()
+        center(vcg)
+        vcg_polar = cart_to_cylindrical(vcg)
+        fig, ax, plots = plot_vcg_axes(vcg_polar)
+        fig, ax, wire = plot_3d_vcg(vcg)
+        plt.show(plots)
+        plt.show(wire)
 
     # Ellipse fit of the PCA projection
     #ellipse_fit_projection(patient, plotting=True)
@@ -234,9 +274,12 @@ if __name__ == "__main__":
     #plt.show()
 
     # resample according to velocity? by interpolating or by actual probability resampling as particle filter
-    ellipse_fit_projection(patient, plotting=True)
-    patient['vcg_real']['px'], patient['vcg_real']['py'], patient['vcg_real']['pz'] = resample_by_velocity(patient['vcg_real'], plotting=True)
-    ellipse_fit_projection(patient, plotting=True)
+    if True:
+        vcg_projected = project_PCA(patient)
+        z, a, b, alpha = fitellipse(mat([vcg_projected[:,0], vcg_projected[:,1]]))
+        ellipse_fit_projection(patient, plotting=True)
+        patient['vcg_real']['px'], patient['vcg_real']['py'], patient['vcg_real']['pz'] = resample_by_velocity(patient['vcg_real'], plotting=True)
+        ellipse_fit_projection(patient, plotting=True)
 
 
     # example calls
@@ -249,7 +292,9 @@ if __name__ == "__main__":
 #for curvature
 #https://stackoverflow.com/questions/28269379/curve-curvature-in-numpy
 
+#for VCG characteristics
+#http://www.heartrhythmjournal.com/article/S1547-5271(15)01009-7/fulltext
+#http://www.mate.tue.nl/mate/pdfs/12120.pdf
 
-
-
-
+#conda create --name environmentNames python=3 pandas numpy matplotlib scikit-learn
+#source activate environmentNames

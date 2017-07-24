@@ -2,6 +2,10 @@ import numpy as np
 import pandas as pd
 from copy import deepcopy
 
+from numpy.linalg import eig, inv
+from numpy import mat
+from sklearn.decomposition import PCA
+from scipy import signal
 
 def cart_to_spherical(vcg):
     """Transform VCG signal from a cartesian to a spherical coordinate system.
@@ -39,6 +43,67 @@ def cart_to_cylindrical(vcg):
     vcg_cyl[:, 1] = np.arctan2(vcg[:, 1], vcg[:, 0])
     vcg_cyl[:, 2] = np.copy(vcg[:, 2])
     return vcg_cyl
+
+
+def resample_by_velocity(patient_vcg, length=None, plotting=False):
+    """Resample the VCG signal uniformly in space (instead of in time).
+
+    Returns:
+    --------
+    x(s), y(s), z(s) : np.ndarray, np.ndarray, np.ndarray
+        Numpy arrays of same sizes as the vcg signal. x, y, z coordinates
+        for the resampled points.
+    """    
+    vcg = patient_vcg.as_matrix()
+    velocitat = np.diff(vcg, axis=0)
+    norma = np.linalg.norm(velocitat, axis=1)
+    param = np.cumsum(np.append(0, norma))
+    
+    if length==None: length = len(param)
+    x = interpolate.interp1d(param, vcg[:,0])
+    y = interpolate.interp1d(param, vcg[:,1])
+    z = interpolate.interp1d(param, vcg[:,2])
+    s = np.linspace(0, param.max(), length)
+    
+    if plotting:
+        ax = plt.axes(projection='3d')
+        ax.plot(vcg[:,0], vcg[:,1], vcg[:,2], color ='r')
+        ax.scatter(x(s), y(s), z(s), color ='b')
+        plt.show()
+
+    return x(s), y(s), z(s)
+
+
+def project_PCA(patient_vcg, by_coords=False, plotting=False):
+    """Transform the VCG signal  with PCA. The new x, y, z axis are ordered
+    by decreasing variance.
+
+    Returns:
+    --------
+    by_coords = False
+     vcg_projected : 
+        Numpy arrays of same sizes as the vcg signal. With transformed coordinates.
+    
+    by_coords = True
+    x(s), y(s), z(s) : np.ndarray, np.ndarray, np.ndarray
+        Numpy arrays of same sizes as the vcg signal. x, y, z coordinates
+        for the transformed points. In this way it is easier to project on the 2D plane
+        by grabbing the first two components.
+    """    
+    #http://scikit-learn.org/stable/auto_examples/decomposition/plot_pca_3d.html
+    
+    vcg = patient_vcg.as_matrix()
+    center(vcg)
+    pca = PCA(n_components=3)
+    pca.fit(vcg)
+    vcg_projected = pca.transform(vcg)
+    
+    if plotting:
+        plt.scatter(vcg_projected[:,0], vcg_projected[:,1])
+        plt.show()
+
+    if by_coords: return vcg_projected[:,0], vcg_projected[:,1], vcg_projected[:,2]
+    return vcg_projected
 
 
 def normalise_patient(patient):
@@ -91,6 +156,38 @@ def center_patient(patient):
 
     for i, vcg_model in enumerate(patient['vcg_model']):
         patient['vcg_model'][i] -= vcg_model.mean()
+
+    return patient
+
+
+def resample_patient(patient):
+    """Resamples the heart vector for each patient by velocity so that it is uniformly sampled in space (instead of in time).
+
+    This requires the heart vector to be in cartesian coordinates!
+    """
+    
+    patient = deepcopy(patient)
+    
+    for i in range(len(patient['vcg_model'])):
+        patient['vcg_model'][i]['px'], patient['vcg_model'][i]['py'], patient['vcg_model'][i]['pz'] = resample_by_velocity(patient['vcg_model'][i])
+
+    patient['vcg_real']['px'], patient['vcg_real']['py'], patient['vcg_real']['pz'] = resample_by_velocity(patient['vcg_real'])
+
+    return patient
+
+
+def project_patient(patient):
+    """Uses PCA on the heart vector and transforms it so that the z axis contains the least variance.
+
+    This requires the heart vector to be in cartesian coordinates!
+    """
+    
+    patient = deepcopy(patient)
+    
+    for i in range(len(patient['vcg_model'])):
+        patient['vcg_model'][i]['px'], patient['vcg_model'][i]['py'], patient['vcg_model'][i]['pz'] = project_PCA(patient['vcg_model'][i], by_coords=True)   
+
+    patient['vcg_real']['px'], patient['vcg_real']['py'], patient['vcg_real']['pz'] = project_PCA(patient['vcg_real'], by_coords=True)
 
     return patient
 

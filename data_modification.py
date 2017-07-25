@@ -110,6 +110,7 @@ def normalise_patient(patient):
     """Normalises the VCG by dividing by the maximum heart vector.
     """
     patient = deepcopy(patient)
+    patient['vcg_model'] = deepcopy(patient['vcg_model'])
 
     # Standardise VCG signal:
     vcg_real_sq = patient['vcg_real']**2
@@ -133,6 +134,7 @@ def cylindrical_patient(patient):
     """Converts the patients VCG signal to cylindrical coordinates.
     """
     patient = deepcopy(patient)
+    patient['vcg_model'] = deepcopy(patient['vcg_model'])
 
     cyl_df = cart_to_cylindrical(patient['vcg_real'].values)
     patient['vcg_real'] = pd.DataFrame(cyl_df, columns=['pr', 'pphi', 'pz'])
@@ -151,6 +153,7 @@ def center_patient(patient):
     """
 
     patient = deepcopy(patient)
+    patient['vcg_model'] = deepcopy(patient['vcg_model'])
 
     patient['vcg_real'] -= patient['vcg_real'].mean()
 
@@ -167,7 +170,8 @@ def resample_patient(patient):
     """
     
     patient = deepcopy(patient)
-    
+    patient['vcg_model'] = deepcopy(patient['vcg_model'])
+
     for i in range(len(patient['vcg_model'])):
         patient['vcg_model'][i]['px'], patient['vcg_model'][i]['py'], patient['vcg_model'][i]['pz'] = resample_by_velocity(patient['vcg_model'][i])
 
@@ -183,6 +187,7 @@ def project_patient(patient):
     """
     
     patient = deepcopy(patient)
+    patient['vcg_model'] = deepcopy(patient['vcg_model'])
     
     for i in range(len(patient['vcg_model'])):
         patient['vcg_model'][i]['px'], patient['vcg_model'][i]['py'], patient['vcg_model'][i]['pz'] = project_PCA(patient['vcg_model'][i], by_coords=True)   

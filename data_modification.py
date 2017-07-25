@@ -5,7 +5,7 @@ from copy import deepcopy
 from numpy.linalg import eig, inv
 from numpy import mat
 from sklearn.decomposition import PCA
-from scipy import signal
+from scipy import interpolate
 
 def cart_to_spherical(vcg):
     """Transform VCG signal from a cartesian to a spherical coordinate system.

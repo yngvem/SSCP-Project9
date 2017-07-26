@@ -264,6 +264,40 @@ def add_velocity_patient(patient, curvsi=False, mode=0):
     return patient
 
 
+def resample_add_velocity_patient(patient, mode=0, curvsi=False):
+    """Resamples the heart vector for each patient by velocity so that it is uniformly sampled in space (instead of in time).
+    Also adds velocity (and curvature) to the dataframe
+    
+    This requires the heart vector to be in cartesian coordinates!
+    """
+    
+    patient = deepcopy(patient)
+    patient['vcg_model'] = deepcopy(patient['vcg_model'])
+    long = len(patient['vcg_model'])
+    vcg_vel = [None]*long
+    
+    if not curvsi: 
+        for i in range(long):
+            patient['vcg_model'][i]['px'], patient['vcg_model'][i]['py'], patient['vcg_model'][i]['pz'], vx, vy, vz
+            = resample_by_velocity(patient['vcg_model'][i], mode=mode, velosi=True)
+            vcg_vel[i] = pd.DataFrame(np.column_stack((vx, vy, vz)),  columns=['vx','vy','vz'])
+        patient['velocity'] = vcg_vel
+
+    else:
+        vcg_curv = [None]*long
+        for i in range(long):
+            patient['vcg_model'][i]['px'], patient['vcg_model'][i]['py'], patient['vcg_model'][i]['pz'], vx, vy, vz, k
+            = resample_by_velocity(patient['vcg_model'][i], mode=mode, velosi=True, curvsi)
+            vcg_vel[i] = pd.DataFrame(np.column_stack((vx, vy, vz)),  columns=['vx','vy','vz'])
+            vcg_curv[i] = pd.DataFrame(k,  columns=['k'])
+        patient['velocity'] = vcg_vel
+        curvsi: patient['curvature'] = vcg_curv
+
+    patient['vcg_real']['px'], patient['vcg_real']['py'], patient['vcg_real']['pz'] = resample_by_velocity(patient['vcg_real'])
+
+    return patient
+
+
 def create_data_matrix(patient, transforms=None):
     """Returns a datamatrix for the patients where each column is a simulation.
 

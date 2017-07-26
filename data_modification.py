@@ -5,7 +5,38 @@ from copy import deepcopy
 from numpy.linalg import eig, inv
 from numpy import mat
 from sklearn.decomposition import PCA
-from scipy import interpolate
+from scipy import interpolate, ndimage
+
+def get_velocity(vcg, mode=3):
+#https://stackoverflow.com/questions/18991408/python-finite-difference-functions
+    if mode==0:
+        dx_dt = ndimage.gaussian_filter1d(vcg[:, 0], sigma=1, order=1, mode='wrap')
+        dy_dt = ndimage.gaussian_filter1d(vcg[:, 1], sigma=1, order=1, mode='wrap')
+        dz_dt = ndimage.gaussian_filter1d(vcg[:, 2], sigma=1, order=1, mode='wrap')
+        return np.column_stack((dx_dt, dy_dt, dz_dt))
+        
+    elif mode==1:
+        dx_dt = np.gradient(vcg[:, 0])
+        dy_dt = np.gradient(vcg[:, 1])
+        dz_dt = np.gradient(vcg[:, 2])
+        return np.column_stack((dx_dt, dy_dt, dz_dt))
+    
+    else:
+        #np.diff(vcg, axis=0)
+        return np.append([[0,0,0]],np.diff(vcg, axis=0), axis=0)
+    
+def get_curvature(vcg, mode=3, given_vel=False):
+    
+    if not given_vel:
+        vel = get_velocity(vcg, mode)
+    else:
+        vel = vcg
+        
+    acc = get_velocity(vel, mode)
+    norm_accXvel = np.linalg.norm(np.cross(acc, vel), axis=1)
+    v3 = np.power(np.linalg.norm(vel, axis=1),3)
+    
+    return norm_accXvel/v3
 
 def cart_to_spherical(vcg):
     """Transform VCG signal from a cartesian to a spherical coordinate system.
@@ -45,7 +76,7 @@ def cart_to_cylindrical(vcg):
     return vcg_cyl
 
 
-def resample_by_velocity(patient_vcg, length=None, plotting=False):
+def resample_by_velocity(patient_vcg, mode=3, length=None, velosi=False, curvsi=False, plotting=False):
     """Resample the VCG signal uniformly in space (instead of in time).
 
     Returns:
@@ -55,22 +86,36 @@ def resample_by_velocity(patient_vcg, length=None, plotting=False):
         for the resampled points.
     """    
     vcg = patient_vcg.as_matrix()
-    velocitat = np.diff(vcg, axis=0)
+    velocitat = get_velocity(vcg, mode)
     norma = np.linalg.norm(velocitat, axis=1)
-    param = np.cumsum(np.append(0, norma))
+    param = np.cumsum(norma)
     
     if length==None: length = len(param)
     x = interpolate.interp1d(param, vcg[:,0])
     y = interpolate.interp1d(param, vcg[:,1])
     z = interpolate.interp1d(param, vcg[:,2])
     s = np.linspace(0, param.max(), length)
-    
+
     if plotting:
         ax = plt.axes(projection='3d')
         ax.plot(vcg[:,0], vcg[:,1], vcg[:,2], color ='r')
         ax.scatter(x(s), y(s), z(s), color ='b')
         plt.show()
 
+    
+    if velosi:
+        vx = interpolate.interp1d(param, velocitat[:,0])
+        vy = interpolate.interp1d(param, velocitat[:,1])
+        vz = interpolate.interp1d(param, velocitat[:,2])
+        norm = interpolate.interp1d(param, norma)
+
+        if curvsi:
+            curvature = get_curvature(velocitat, mode, given_vel=True)
+            k = interpolate.interp1d(param, curvature)
+            return [x(s), y(s), z(s)], [vx(s), vy(s), vz(s)], norm(s), k(s)
+    
+        return [x(s), y(s), z(s)], [vx(s), vy(s), vz(s)], norm(s)
+    
     return x(s), y(s), z(s)
 
 

@@ -112,9 +112,9 @@ def resample_by_velocity(patient_vcg, mode=3, length=None, velosi=False, curvsi=
         if curvsi:
             curvature = get_curvature(velocitat, mode, given_vel=True)
             k = interpolate.interp1d(param, curvature)
-            return [x(s), y(s), z(s)], [vx(s), vy(s), vz(s)], norm(s), k(s)
+            return x(s), y(s), z(s), vx(s), vy(s), vz(s), norm(s), k(s)
     
-        return [x(s), y(s), z(s)], [vx(s), vy(s), vz(s)], norm(s)
+        return x(s), y(s), z(s), vx(s), vy(s), vz(s), norm(s)
     
     return x(s), y(s), z(s)
 

@@ -242,6 +242,28 @@ def project_patient(patient):
     return patient
 
 
+def add_velocity_patient(patient, curvsi=False, mode=0):
+    """Adds the velocity (and the curvature) to the dataframe
+    """
+    
+    patient = deepcopy(patient)
+    patient['vcg_model'] = deepcopy(patient['vcg_model'])
+
+    long = len(patient['vcg_model'])
+    vcg_vel = [None]*long
+    if curvsi: vcg_curv = [None]*long
+    
+    for i in range(long):
+            velocitat = get_velocity(patient['vcg_model'][i].as_matrix(), mode=mode)
+            vcg_vel[i] = pd.DataFrame(velocitat,  columns=['vx','vy','vz'])
+            if curvsi: vcg_curv[i] = pd.DataFrame(get_curvature(velocitat, mode=mode, given_vel=True),  columns=['k'])
+
+    patient['velocity'] = vcg_vel
+    if curvsi: patient['curvature'] = vcg_curv
+
+    return patient
+
+
 def create_data_matrix(patient, transforms=None):
     """Returns a datamatrix for the patients where each column is a simulation.
 

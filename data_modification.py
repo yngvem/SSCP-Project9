@@ -7,6 +7,7 @@ from numpy import mat
 from sklearn.decomposition import PCA
 from scipy import interpolate
 
+
 def cart_to_spherical(vcg):
     """Transform VCG signal from a cartesian to a spherical coordinate system.
 
@@ -106,6 +107,10 @@ def project_PCA(patient_vcg, by_coords=False, plotting=False):
     return vcg_projected
 
 
+def center(vcg):
+    vcg -= vcg.mean(0, keepdims=True) 
+
+
 def normalise_patient(patient):
     """Normalises the VCG by dividing by the maximum heart vector.
     """
@@ -163,7 +168,7 @@ def center_patient(patient):
     return patient
 
 
-def resample_patient(patient):
+def resample_patient(patient, length=None):
     """Resamples the heart vector for each patient by velocity so that it is uniformly sampled in space (instead of in time).
 
     This requires the heart vector to be in cartesian coordinates!
@@ -172,10 +177,14 @@ def resample_patient(patient):
     patient = deepcopy(patient)
     patient['vcg_model'] = deepcopy(patient['vcg_model'])
 
-    for i in range(len(patient['vcg_model'])):
-        patient['vcg_model'][i]['px'], patient['vcg_model'][i]['py'], patient['vcg_model'][i]['pz'] = resample_by_velocity(patient['vcg_model'][i])
+    for i, vcg in enumerate(patient['vcg_model']):
+        resampled_vcg = np.array(resample_by_velocity(vcg, length=length)).T
+        patient['vcg_model'][i] = pd.DataFrame(resampled_vcg, columns=vcg.columns)
+        #patient['vcg_model'][i]['px'], patient['vcg_model'][i]['py'], patient['vcg_model'][i]['pz'] = resample_by_velocity(patient['vcg_model'][i], length=length)
 
-    patient['vcg_real']['px'], patient['vcg_real']['py'], patient['vcg_real']['pz'] = resample_by_velocity(patient['vcg_real'])
+    resampled_vcg = np.array(resample_by_velocity(vcg, length=length)).T
+    patient['vcg_real'] = pd.DataFrame(resampled_vcg, columns = patient['vcg_real'].columns)
+    #patient['vcg_real']['px'], patient['vcg_real']['py'], patient['vcg_real']['pz'] = resample_by_velocity(patient['vcg_real'], length=length)
 
     return patient
 

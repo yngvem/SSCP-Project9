@@ -7,6 +7,7 @@ from numpy import mat
 from sklearn.decomposition import PCA
 from scipy import interpolate, ndimage
 
+
 def get_velocity(vcg, mode=3):
 #https://stackoverflow.com/questions/18991408/python-finite-difference-functions
     if mode==0:
@@ -24,6 +25,7 @@ def get_velocity(vcg, mode=3):
     else:
         #np.diff(vcg, axis=0)
         return np.append([[0,0,0]],np.diff(vcg, axis=0), axis=0)
+
     
 def get_curvature(vcg, mode=3, given_vel=False):
     
@@ -287,20 +289,18 @@ def resample_add_velocity_patient(patient, mode=0, curvsi=False):
     
     if not curvsi: 
         for i in range(long):
-            patient['vcg_model'][i]['px'], patient['vcg_model'][i]['py'], patient['vcg_model'][i]['pz'], vx, vy, vz
-            = resample_by_velocity(patient['vcg_model'][i], mode=mode, velosi=True)
+            patient['vcg_model'][i]['px'], patient['vcg_model'][i]['py'], patient['vcg_model'][i]['pz'], vx, vy, vz = resample_by_velocity(patient['vcg_model'][i], mode=mode, velosi=True)
             vcg_vel[i] = pd.DataFrame(np.column_stack((vx, vy, vz)),  columns=['vx','vy','vz'])
         patient['velocity'] = vcg_vel
 
     else:
         vcg_curv = [None]*long
         for i in range(long):
-            patient['vcg_model'][i]['px'], patient['vcg_model'][i]['py'], patient['vcg_model'][i]['pz'], vx, vy, vz, k
-            = resample_by_velocity(patient['vcg_model'][i], mode=mode, velosi=True, curvsi)
+            patient['vcg_model'][i]['px'], patient['vcg_model'][i]['py'], patient['vcg_model'][i]['pz'], vx, vy, vz, k = resample_by_velocity(patient['vcg_model'][i], mode=mode, velosi=True, curvsi=True)
             vcg_vel[i] = pd.DataFrame(np.column_stack((vx, vy, vz)),  columns=['vx','vy','vz'])
             vcg_curv[i] = pd.DataFrame(k,  columns=['k'])
         patient['velocity'] = vcg_vel
-        curvsi: patient['curvature'] = vcg_curv
+        if curvsi: patient['curvature'] = vcg_curv
 
     patient['vcg_real']['px'], patient['vcg_real']['py'], patient['vcg_real']['pz'] = resample_by_velocity(patient['vcg_real'])
 

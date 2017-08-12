@@ -339,6 +339,26 @@ def create_data_matrix(patient, transforms=None):
 
 #ellipse stuff
 
+def add_ellipse_patient(patient):
+    """Adds ellipse measures to the dataframe
+    """
+    
+    patient = deepcopy(patient)
+    patient['vcg_model'] = deepcopy(patient['vcg_model'])
+
+    long = len(patient['vcg_model'])
+    vcg_ellipse = [None]*long
+    
+    for i in range(long):
+            fitted_ellipse = fitEllipse(patient['vcg_model'][i].values[:,0], patient['vcg_model'][i].values[:,1])
+            axis = ellipse_axis_length(fitted_ellipse)
+            vcg_ellipse[i] = pd.DataFrame(np.column_stack(axis),  columns=['a','b'])
+
+    patient['ellipse'] = vcg_ellipse
+
+    return patient
+
+
 def fitEllipse(x,y):
     #http://nicky.vanforeest.com/misc/fitEllipse/fitEllipse.html#the-approach
     #https://stackoverflow.com/questions/29051168/data-fitting-an-ellipse-in-3d-space

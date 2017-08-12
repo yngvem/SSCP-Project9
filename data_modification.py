@@ -275,6 +275,57 @@ def add_velocity_patient(patient, curvsi=False, mode=3):
     return patient
 
 
+def add_features_cyl_patient(patient):
+    """Adds features to the dataframe
+        """
+    
+    patient = deepcopy(patient)
+    patient['vcg_model'] = deepcopy(patient['vcg_model'])
+    
+    long = len(patient['vcg_model'])
+    
+    integral_radi_vel = [None]*long
+    max_radi = [None]*long
+    integral_radi = [None]*long
+    dif_radi = [None]*long
+    
+    for i in range(long):
+        integral_radi_vel[i] = (patient['vcg_model'][i]['pr'].values * ( np.sqrt(patient['velocity'][i]['vx'].values**2 + patient['velocity'][i]['vy'].values**2 + patient['velocity'][i]['vz'].values**2))).sum()
+        max_radi[i] = patient['vcg_model'][i]['pr'].values.max()
+        integral_radi[i] = patient['vcg_model'][i]['pr'].values.sum()
+        dif_radi[i] = np.diff(np.diff(patient['vcg_model'][i]['pr'].values)).sum()
+
+    patient['cyl_features'] = pd.DataFrame(np.column_stack((np.array(integral_radi_vel), np.array(max_radi), np.array(integral_radi), np.array(dif_radi))), columns=['integral_radi_vel', 'max_radi', 'integral_radi', 'dif_radi'])
+    
+    return patient
+
+
+def add_features_cartcyl_patient(patient_cart, patient_cyl):
+    """Adds features to the dataframe
+        """
+    
+    patient_cart = deepcopy(patient_cart)
+    patient_cart['vcg_model'] = deepcopy(patient_cart['vcg_model'])
+    
+    patient_cyl = deepcopy(patient_cyl)
+    patient_cyl['vcg_model'] = deepcopy(patient_cyl['vcg_model'])
+
+    
+    long = len(patient_cart['vcg_model'])
+    
+    winding_num = [None]*long
+    winding_num_pond = [None]*long
+    
+    for i in range(long):
+        winding_num[i] = ((patient_cart['vcg_model'][i]['px']-patient_cart['vcg_model'][i]['py'])/(patient_cyl['vcg_model'][i]['pr'].values**2)).sum()
+
+        winding_num_pond[i] = ((patient_cart['vcg_model'][i]['px']/np.ptp(patient_cart['vcg_model'][i]['px'])-patient_cart['vcg_model'][i]['py']/np.ptp(patient_cart['vcg_model'][i]['py']))/(patient_cyl['vcg_model'][i]['pr'].values**2)).sum()
+    
+    patient_cyl['cartcyl_features'] = pd.DataFrame(np.column_stack((np.array(winding_num), np.array(winding_num_pond))), columns=['winding_num', 'winding_num_pond'])
+    
+    return patient_cyl
+
+
 def resample_add_velocity_patient(patient, mode=3, curvsi=False):
     """Resamples the heart vector for each patient by velocity so that it is uniformly sampled in space (instead of in time).
     Also adds velocity (and curvature) to the dataframe
@@ -347,14 +398,14 @@ def add_ellipse_patient(patient):
     patient['vcg_model'] = deepcopy(patient['vcg_model'])
 
     long = len(patient['vcg_model'])
-    vcg_ellipse = [None]*long
+    vcg_ellipse_a = [None]*long
+    vcg_ellipse_b = [None]*long
     
     for i in range(long):
             fitted_ellipse = fitEllipse(patient['vcg_model'][i].values[:,0], patient['vcg_model'][i].values[:,1])
-            axis = ellipse_axis_length(fitted_ellipse)
-            vcg_ellipse[i] = pd.DataFrame(np.column_stack(axis),  columns=['a','b'])
-
-    patient['ellipse'] = vcg_ellipse
+            vcg_ellipse_a[i], vcg_ellipse_b[i]  = ellipse_axis_length(fitted_ellipse)
+    
+    patient['ellipse'] = pd.DataFrame(np.column_stack((vcg_ellipse_a, vcg_ellipse_b)),  columns=['a','b'])
 
     return patient
 

@@ -115,9 +115,9 @@ def resample_by_velocity(patient_vcg, mode=3, length=None, velosi=False, curvsi=
         if curvsi:
             curvature = get_curvature(velocitat, mode, given_vel=True)
             k = interpolate.interp1d(param, curvature)
-            return x(s), y(s), z(s), vx(s), vy(s), vz(s), norm(s), k(s)
+            return x(s), y(s), z(s), vx(s), vy(s), vz(s), k(s)
     
-        return x(s), y(s), z(s), vx(s), vy(s), vz(s), norm(s)
+        return x(s), y(s), z(s), vx(s), vy(s), vz(s)
     
     return x(s), y(s), z(s)
 
@@ -253,7 +253,7 @@ def project_patient(patient):
     return patient
 
 
-def add_velocity_patient(patient, curvsi=False, mode=0):
+def add_velocity_patient(patient, curvsi=False, mode=3):
     """Adds the velocity (and the curvature) to the dataframe
     """
     
@@ -275,7 +275,7 @@ def add_velocity_patient(patient, curvsi=False, mode=0):
     return patient
 
 
-def resample_add_velocity_patient(patient, mode=0, curvsi=False):
+def resample_add_velocity_patient(patient, mode=3, curvsi=False):
     """Resamples the heart vector for each patient by velocity so that it is uniformly sampled in space (instead of in time).
     Also adds velocity (and curvature) to the dataframe
     

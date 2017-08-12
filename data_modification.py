@@ -288,14 +288,17 @@ def add_features_cyl_patient(patient):
     max_radi = [None]*long
     integral_radi = [None]*long
     dif_radi = [None]*long
+    turning_num = [None]*long
     
     for i in range(long):
         integral_radi_vel[i] = (patient['vcg_model'][i]['pr'].values * ( np.sqrt(patient['velocity'][i]['vx'].values**2 + patient['velocity'][i]['vy'].values**2 + patient['velocity'][i]['vz'].values**2))).sum()
         max_radi[i] = patient['vcg_model'][i]['pr'].values.max()
         integral_radi[i] = patient['vcg_model'][i]['pr'].values.sum()
         dif_radi[i] = np.diff(np.diff(patient['vcg_model'][i]['pr'].values)).sum()
+        turning = patient['curvature'][i].values
+        turning_num[i] = turning[np.isfinite(turning)].astype(float).sum()
 
-    patient['cyl_features'] = pd.DataFrame(np.column_stack((np.array(integral_radi_vel), np.array(max_radi), np.array(integral_radi), np.array(dif_radi))), columns=['integral_radi_vel', 'max_radi', 'integral_radi', 'dif_radi'])
+    patient['cyl_features'] = pd.DataFrame(np.column_stack((np.array(integral_radi_vel), np.array(max_radi), np.array(integral_radi), np.array(dif_radi), np.array(turning_num))), columns=['integral_radi_vel', 'max_radi', 'integral_radi', 'dif_radi', 'turning_num'])
     
     return patient
 

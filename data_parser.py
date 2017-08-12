@@ -90,10 +90,8 @@ def parse_all(initial_path = "/Users/aleix/Desktop/LBBB_LVdyssync", vcg_which = 
         geo_values = np.delete(geo_values.values, [4,5,6], axis=1) #. values. Deleting unknowns, 'AoR_Diam', 'LA_Dimen', 'LA_Vol_Index'
         geo_matrix = np.repeat(geo_values[patient_number, :], count, axis=0)
         params = np.column_stack((params, geo_matrix))
-        print params[0]
         patient = pd.Series([opt_desync[0], dys, pd.DataFrame(params.astype(float), columns=['x','y','z','cond','L','R', 'patient_number', 'IVSd', 'LVIDd', 'LVIDs', 'LVPWd', 'EDV', 'ESV', 'EF']), vcg_real,
                              vcg_model], index=['opt_desync', 'desync', 'eval_values', 'vcg_real', 'vcg_model'])
-        print patient['desync']
         return patient
 
     patient = pd.Series([opt_desync[0], dys, pd.DataFrame(params, columns=['x','y','z','cond','L','R', 'patient_number']), vcg_real,

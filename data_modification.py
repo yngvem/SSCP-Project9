@@ -329,7 +329,7 @@ def add_features_cartcyl_patient(patient_cart, patient_cyl):
     return patient_cyl
 
 
-def resample_add_velocity_patient(patient, mode=3, curvsi=False):
+def resample_add_velocity_patient(patient, length=None, mode=3, curvsi=False):
     """Resamples the heart vector for each patient by velocity so that it is uniformly sampled in space (instead of in time).
     Also adds velocity (and curvature) to the dataframe
     
@@ -343,7 +343,13 @@ def resample_add_velocity_patient(patient, mode=3, curvsi=False):
     
     if not curvsi: 
         for i in range(long):
-            patient['vcg_model'][i]['px'], patient['vcg_model'][i]['py'], patient['vcg_model'][i]['pz'], vx, vy, vz = resample_by_velocity(patient['vcg_model'][i], mode=mode, velosi=True)
+            #vcg_vel[i] = pd.DataFrame(np.column_stack((vx, vy, vz)),  columns=['vx','vy','vz']))
+
+            rsx, rsy, rsz, vx, vy, vz = resample_by_velocity(patient['vcg_model'][i], mode=mode, velosi=True, length=length)
+            resampled_vcg = np.column_stack((rsx, rsy, rsz))
+
+            patient['vcg_model'][i] = pd.DataFrame(resampled_vcg, columns=patient['vcg_model'][i].columns)
+            #patient['vcg_model'][i]['px'], patient['vcg_model'][i]['py'], patient['vcg_model'][i]['pz'], vx, vy, vz = resample_by_velocity(patient['vcg_model'][i], mode=mode, velosi=True, length=length)
             vcg_vel[i] = pd.DataFrame(np.column_stack((vx, vy, vz)),  columns=['vx','vy','vz'])
         patient['velocity'] = vcg_vel
 
@@ -356,9 +362,12 @@ def resample_add_velocity_patient(patient, mode=3, curvsi=False):
         patient['velocity'] = vcg_vel
         if curvsi: patient['curvature'] = vcg_curv
 
-    patient['vcg_real']['px'], patient['vcg_real']['py'], patient['vcg_real']['pz'] = resample_by_velocity(patient['vcg_real'])
+    rsx, rsy, rsz, vx, vy, vz = resample_by_velocity(patient['vcg_real'], mode=mode, velosi=True, length=length)
+    patient['vcg_real'] = pd.DataFrame(np.column_stack((rsx, rsy, rsz)), columns=patient['vcg_real'].columns)
+    patient['velocity_real'] = pd.DataFrame(np.column_stack((vx, vy ,vz)), columns=['vx', 'vy', 'vz'])
 
     return patient
+
 
 
 def create_data_matrix(patient, transforms=None):
